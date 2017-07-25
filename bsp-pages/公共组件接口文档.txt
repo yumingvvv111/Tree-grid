@@ -1,0 +1,121 @@
+公共组件API
+
+
+   < 一 > 列表: TreeList
+
+	 * @param dataURL{string}: 请求地址
+	 * @param listType{string}: 列表类型，默认是树列表
+	 * @param childNodeName{string}: 如果是树形列表，指定子节点的字段名称
+	 * @param convertRecord{function} 如果数据有问题可以自定义转换函数
+	 * @usage:
+	 * 一 使用步骤：
+	 *   1)    在对应的页面上添加#parse("/inc/kendoUI.html")
+	 *   2) 添加列表将要放置的容器
+	 *     e.g.
+	 *     <div id="treeList"><div class="tree-list-content"> </div></div>
+	 *     <div id="paginationWrapper" class="text-right"></div>
+	 *   3) 在js里创建list对象
+	 *     e.g.
+	 *     var treeList = new TreeList({
+						dataURL: '/bsp/sysMenu/find',
+						//listType:'simple',//可选项，默认渲染为树形列表，simple时为普通列表
+						//convertRecord: function(dataRecord, exportObj, beginIndex){ },//可选项，转换函数
+						fieldMap: {
+						id: {
+							value: 'pkId',
+							type: 'number'
+						},
+						parentID: {
+							value: 'parentId',
+							type: 'number',
+							condition: 'parentId !== 0'
+						},
+						//...
+						createDate: {
+							value: 'createDate',
+							type: 'string',
+							title:'创建时间'
+						},
+						sort: {
+							value: 'sort',
+							type: 'string',
+							title: '排序'
+						},
+						action: {
+							value: '<a class="hidden" onclick="toFunctionList({#pkId})" href="javascript:void(0)"> 添加子菜单功能点 </a>\
+									 <a onclick="openDetailedFunction({#pkId})" href="javascript:void(0)"> 详细</a>\
+									 <a onclick="updateChildFunction({#pkId})" href="javascript:void(0)"> 修改 </a>\
+									 <a href="javascript:void(0)" onclick="deleteId({#pkId});" id="modify{#pkId}">禁用</a>',
+							type: 'html',
+							title: '操作'
+						}
+				}
+		});
+	 * 二 问题：
+	 *   1) 如何切换普通列表和树形列表?
+	 *      new的时候配置listType属性，如果值为tree则为树形列表，反之为普通列表
+	 *      e.g.
+	 *      var treeList = new TreeList({
+						dataURL: '/bsp/sysMenu/find',
+						listType:'tree',
+						...});
+	 树形列表示例地址：用户中心-菜单管理，对应文件路径/com.bioeh.sp.hm.bsp/src/main/webapp/WEB-INF/views/usercenter/menu/menu_list.html
+	 普通列表示例地址： 用户中心-权限管理，对应文件路径/com.bioeh.sp.hm.bsp/src/main/webapp/viewjs/usercenter/permission/permission_list.js
+
+	 *   2) 一级和二级的操作按钮如何不同?
+	 *      在字段的value属性写js表达式 true ? 'true的时候显示的按钮' : 'false的时候显示的按钮';
+	 *      e.g.
+	 *      action: {
+					value: 'tagFId === 0 ?\
+						\'<a onclick="openAddTag({#tagId},\\\'\\\')" href="javascript:void(0)"> 添加子标签  </a><a onclick="openAddTag({#tagFId},{#tagId})" href="javascript:void(0)">修改</a>\':\
+						\'<a href="javascript:void(0)" onclick="openAddTag({#tagFId},{#tagId})">修改</a>\'\
+						',
+					type: 'html',
+					title: '操作'
+				}
+	 *      示例地址： 标签管理，对应文件路径/com.bioeh.sp.hm.bsp/src/main/webapp/viewjs/member/tag/tagList.js
+	 *
+	 *   3) 有的字段是满足条件才有，怎么在字段里配置？
+	 *      在字段里配置condition属性，值是一个表达式，当表达式返回值是true时才有此字段，e.g.
+	 *      parentID: {
+							value: 'parentId',
+							type: 'number',
+							condition: 'parentId !== 0'//notice this
+						}
+	 *   4) 如何在模板里写if esle？
+	 *   两种写法:
+	 *   写法1 -> 在value里拼字符串，写成三元表达式(实例地址：标签类别-标签，js地址：/com.bioeh.sp.hm.bsp/src/main/webapp/viewjs/member/tag/tagList.js)
+	 *   比如：value: 'tagFId === 0 ?\
+	 \'<a onclick="openAddTag({#tagId},\\\'\\\')" href="javascript:void(0)"> 添加子标签  </a><a onclick="openAddTag({#tagFId},{#tagId})" href="javascript:void(0)">修改</a>\':\
+	 \'<a href="javascript:void(0)" onclick="openAddTag({#tagFId},{#tagId})">修改</a>\'\
+	 ',
+
+	 写法2 -> 需要配置两个字段value和cellRender，value如果是数组表示罗列所有不同的模板，然后模板的渲染逻辑由cellRender控制，所以上边的例子如果按照这种方式可以写成：
+
+	 action: {
+					value: [
+					 '1::<a onclick="openAddTag({#tagId},\'\')" href="javascript:void(0)"> 添加子标签  </a><a onclick="openAddTag({#tagFId},{#tagId})" href="javascript:void(0)">修改</a>',
+								 '2::<a href="javascript:void(0)" onclick="openAddTag({#tagFId},{#tagId})">修改</a>'
+								 ],
+					type: 'html',
+					title: '操作',
+					cellRender: function(templateMap, rowData, value){
+							var d = rowData.$this;
+							var template = '';
+						if(d.tagFId === 0){
+							template = templateMap['1'];
+						}else{
+							template = templateMap['2'];
+						}
+						return template;
+					}
+				}
+	 (实例地址：用户中心-菜单管理，js地址：/com.bioeh.sp.hm.bsp/src/main/webapp/viewjs/usercenter/menu/userlist.js)
+
+	 *   5) 搜索和过滤？
+	 *   在new的时候配置formID，值为搜索的外围的表单（form）ID号。
+	 *   formID: '#userpost'
+	 *
+	 *
+	 *   4) 列的显示和隐藏？
+	 //todo
